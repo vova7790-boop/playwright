@@ -4,6 +4,14 @@ import fs from 'fs';
 
 const SESSION_PATH = path.resolve('session.json');
 
+const MESSAGE = `🫀 Давление скачет? Вот что реально работает — без таблеток
+Современные кардиологи говорят прямо: при умеренном давлении (до 150/90) начинать надо не с таблеток, а с образа жизни. И это не просто слова — есть конкретные цифры и методы, которые дают измеримый результат.
+Например, убрать из рациона лишнюю соль — и верхнее давление падает на 2–8 мм рт. ст. Добавить 5 г клетчатки в день (пара ложек отрубей или горсть чечевицы) — ещё минус 3 мм. Всего пару изменений в еде — и эффект уже виден.
+А если давление поднялось прямо сейчас: опусти ноги в горячую воду на 10–15 минут и подышите медленно — вдох на 5 счётов, выдох на 5. Уже через 3–5 минут такого дыхания сосуды расслабятся и станет легче. Главное — при 170/100 и выше это не замена врачу, а первая помощь до него.
+Используешь какой-нибудь домашний способ контролировать давление?
+👍 — да, есть свой метод
+❤️ — нет, только таблетки`;
+
 test('отправить сообщение в канал тест', async ({ browser }) => {
   if (!fs.existsSync(SESSION_PATH)) {
     throw new Error(`Файл сессии не найден: ${SESSION_PATH}`);
@@ -21,16 +29,20 @@ test('отправить сообщение в канал тест', async ({ br
   await page.waitForFunction(() => document.body.innerText.length > 50, { timeout: 30000 }).catch(() => {});
   await page.waitForTimeout(3000);
 
-  // Вводим текст в поле поста
   const messageInput = page.locator('[contenteditable][placeholder="Пост"]');
   await messageInput.waitFor({ state: 'visible', timeout: 20000 });
   await messageInput.click();
-  await page.keyboard.type('тест автоматизации');
-  await page.waitForTimeout(500);
 
+  // Вставляем через буфер обмена чтобы корректно передать эмодзи и переносы строк
+  await page.evaluate((text) => {
+    const el = document.querySelector('[contenteditable][placeholder="Пост"]') as HTMLElement;
+    el.focus();
+    document.execCommand('insertText', false, text);
+  }, MESSAGE);
+
+  await page.waitForTimeout(500);
   await page.screenshot({ path: 'test-results/message-typed.png' });
 
-  // Кнопка отправки — синий круг со стрелкой вверх (svelte-1cuof8n)
   const sendButton = page.locator('button.svelte-1cuof8n');
   await sendButton.waitFor({ state: 'visible', timeout: 5000 });
   await sendButton.click();
@@ -38,8 +50,7 @@ test('отправить сообщение в канал тест', async ({ br
   await page.waitForTimeout(3000);
   await page.screenshot({ path: 'test-results/message-sent.png' });
 
-  // Проверяем что сообщение появилось в чате
-  await expect(page.locator('text=тест автоматизации').first()).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('text=Давление скачет').first()).toBeVisible({ timeout: 10000 });
 
   await context.close();
 });
