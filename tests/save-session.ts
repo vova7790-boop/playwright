@@ -1,7 +1,7 @@
 import { chromium } from '@playwright/test';
 import path from 'path';
 
-const SESSION_PATH = path.join(__dirname, '../session.json');
+const SESSION_PATH = path.resolve('session.json');
 
 (async () => {
   const browser = await chromium.launch({ headless: false });
