@@ -1,9 +1,12 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
+import { generateImage } from '../src/generate-image';
 
 const SESSION_PATH = path.resolve('session.json');
 const IMAGE_PATH = path.resolve('test-image.png');
+
+const IMAGE_PROMPT = 'Medical illustration showing healthy heart, blood pressure monitor, fresh vegetables and herbs on clean white background, modern flat design, blue and green tones, health and wellness concept';
 
 // HTML с форматированием: заголовок жирным, пустые строки между абзацами
 const MESSAGE_HTML = [
@@ -22,7 +25,8 @@ const MESSAGE_HTML = [
 
 test('отправить фото с текстом в канал тест', async ({ browser }) => {
   if (!fs.existsSync(SESSION_PATH)) throw new Error(`Файл сессии не найден: ${SESSION_PATH}`);
-  if (!fs.existsSync(IMAGE_PATH)) throw new Error(`Изображение не найдено: ${IMAGE_PATH}`);
+  // Генерируем картинку через kie.ai API
+  await generateImage(IMAGE_PROMPT, IMAGE_PATH);
 
   const context = await browser.newContext({
     storageState: SESSION_PATH,
