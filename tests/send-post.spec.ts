@@ -55,26 +55,32 @@ test('отправить пост с картинкой в канал Max', asyn
   await messageInput.click();
   await page.waitForTimeout(300);
 
-  const lines = postText.split('\n');
-  let isFirstLine = true;
+  // Split into paragraphs (\n\n) and lines within each paragraph (\n).
+  // Between paragraphs: 2×Shift+Enter = one blank line.
+  // Between lines inside a paragraph: 1×Shift+Enter = no blank line.
+  const paragraphs = postText.split('\n\n');
+  let isFirstParagraph = true;
 
-  for (const line of lines) {
-    if (!isFirstLine) {
+  for (const paragraph of paragraphs) {
+    if (!isFirstParagraph) {
+      await page.keyboard.press('Shift+Enter');
       await page.keyboard.press('Shift+Enter');
     }
 
-    if (isFirstLine) {
-      // Первая строка — заголовок жирным
-      await page.keyboard.press('Control+b');
-      await page.keyboard.type(line);
-      await page.keyboard.press('Control+b');
-      isFirstLine = false;
-    } else if (line.trim() === '') {
-      // Пустая строка — дополнительный перенос для визуального отступа
-      await page.keyboard.press('Shift+Enter');
-    } else {
-      await page.keyboard.type(line);
+    const lines = paragraph.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      if (i > 0) await page.keyboard.press('Shift+Enter');
+
+      if (isFirstParagraph && i === 0) {
+        await page.keyboard.press('Control+b');
+        await page.keyboard.type(lines[i]);
+        await page.keyboard.press('Control+b');
+      } else {
+        await page.keyboard.type(lines[i]);
+      }
     }
+
+    isFirstParagraph = false;
   }
 
   await page.waitForTimeout(500);
@@ -88,7 +94,7 @@ test('отправить пост с картинкой в канал Max', asyn
   await page.screenshot({ path: 'test-results/post-sent.png' });
 
   // Проверяем что первая строка заголовка появилась в чате
-  const firstLine = lines[0].replace(/^[^\wЀ-ӿ]+/, '').substring(0, 15);
+  const firstLine = paragraphs[0].split('\n')[0].replace(/^[^\wЀ-ӿ]+/, '').substring(0, 15);
   if (firstLine) {
     await expect(page.locator(`text=${firstLine}`).first()).toBeVisible({ timeout: 10000 });
   }
