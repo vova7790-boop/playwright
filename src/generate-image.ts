@@ -57,7 +57,7 @@ async function createTask(prompt: string): Promise<string> {
   return res.data.taskId;
 }
 
-async function pollResult(taskId: string, timeoutMs = 120000): Promise<string> {
+async function pollResult(taskId: string, timeoutMs = 300000): Promise<string> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     const res = await apiRequest(`${BASE_URL}/recordInfo?taskId=${taskId}`) as {
