@@ -65,10 +65,50 @@ const [fileChooser] = await Promise.all([
 ]);
 await fileChooser.setFiles('/абсолютный/путь/к/файлу.png');
 
-// 3. Ввести текст и отправить (как обычно)
+// 3. Ввести текст с форматированием через клавиатуру (после attach — только keyboard, не insertHTML)
 await messageInput.click();
-// ... execCommand + sendButton.click()
+await page.waitForTimeout(300);
+
+// Жирный заголовок
+await page.keyboard.press('Control+b');
+await page.keyboard.type('🫀 Заголовок поста');
+await page.keyboard.press('Control+b');
+
+// Пустая строка между абзацами — двойной Shift+Enter
+await page.keyboard.press('Shift+Enter');
+await page.keyboard.press('Shift+Enter');
+await page.keyboard.type('Текст первого абзаца.');
+
+await page.keyboard.press('Shift+Enter');
+await page.keyboard.press('Shift+Enter');
+await page.keyboard.type('Текст второго абзаца.');
+
+// Перед вопросом — пустая строка (двойной Shift+Enter)
+await page.keyboard.press('Shift+Enter');
+await page.keyboard.press('Shift+Enter');
+await page.keyboard.type('Вопрос к аудитории?');
+
+// Ответы — одинарный Shift+Enter (новая строка, без пустой строки)
+await page.keyboard.press('Shift+Enter');
+await page.keyboard.type('👍 — да');
+await page.keyboard.press('Shift+Enter');
+await page.keyboard.type('❤️ — нет');
+
+// 4. Отправить
+const sendButton = page.locator('button.svelte-1cuof8n');
+await sendButton.waitFor({ state: 'visible', timeout: 5000 });
+await sendButton.click();
 ```
+
+### Правила форматирования
+
+| Действие | Клавиши |
+|---|---|
+| Жирный текст | `Ctrl+B` (включить) → текст → `Ctrl+B` (выключить) |
+| Пустая строка между абзацами | `Shift+Enter` дважды |
+| Новая строка без пустой строки | `Shift+Enter` один раз |
+
+> После прикрепления файла `insertHTML` не работает — использовать только `keyboard.type()` / `keyboard.press()`.
 
 ### Селекторы (актуальны на апрель 2026)
 
