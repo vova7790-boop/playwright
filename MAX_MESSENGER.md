@@ -1,5 +1,25 @@
 # Автоматизация Max Messenger (web.max.ru)
 
+## Генерация картинки через kie.ai
+
+Модуль: `src/generate-image.ts`
+
+```typescript
+import { generateImage } from '../src/generate-image';
+
+await generateImage('prompt на английском', 'test-image.png');
+```
+
+**API flow:**
+1. `POST https://api.kie.ai/api/v1/jobs/createTask` → получаем `taskId`
+2. `GET https://api.kie.ai/api/v1/jobs/recordInfo?taskId=...` → polling каждые 10 сек
+3. Когда `data.state === 'success'` → парсим `data.resultJson` → берём `resultUrls[0]`
+4. Скачиваем картинку по URL
+
+**Параметры:** model `gpt-image-2-text-to-image`, aspect_ratio `4:3`
+
+---
+
 ## Авторизация
 
 Сессия хранится в `session.json` (localStorage, без cookies).
