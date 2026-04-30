@@ -90,6 +90,7 @@ test('отправить фото с текстом в канал тест', asy
   // Вопрос — перед ним пустая строка уже есть, после него одинарный перенос
   await page.keyboard.type('Используешь какой-нибудь домашний способ контролировать давление?');
   await page.keyboard.press('Shift+Enter');
+  await page.keyboard.press('Shift+Enter');
   await page.keyboard.type('👍 — да, есть свой метод');
   await page.keyboard.press('Shift+Enter');
   await page.keyboard.type('❤️ — нет, только таблетки');
