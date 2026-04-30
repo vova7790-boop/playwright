@@ -9,6 +9,7 @@ const CONTENT_PATH = path.resolve('post-content.json');
 const CHANNEL_URL = 'https://web.max.ru/-74167276777563';
 
 test('отправить пост с картинкой в канал Max', async ({ browser }) => {
+  test.setTimeout(300000); // 5 минут — генерация картинки через kie.ai занимает до 120 сек
   if (!fs.existsSync(SESSION_PATH)) throw new Error(`Файл сессии не найден: ${SESSION_PATH}`);
   if (!fs.existsSync(CONTENT_PATH)) throw new Error(`Файл контента не найден: ${CONTENT_PATH}. Сначала сгенерируй пост.`);
 
