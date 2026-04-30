@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 
 const SESSION_PATH = path.resolve('session.json');
+const IMAGE_PATH = path.resolve('test-image.png');
 
 const MESSAGE = `🫀 Давление скачет? Вот что реально работает — без таблеток
 Современные кардиологи говорят прямо: при умеренном давлении (до 150/90) начинать надо не с таблеток, а с образа жизни. И это не просто слова — есть конкретные цифры и методы, которые дают измеримый результат.
@@ -12,10 +13,9 @@ const MESSAGE = `🫀 Давление скачет? Вот что реальн�
 👍 — да, есть свой метод
 ❤️ — нет, только таблетки`;
 
-test('отправить сообщение в канал тест', async ({ browser }) => {
-  if (!fs.existsSync(SESSION_PATH)) {
-    throw new Error(`Файл сессии не найден: ${SESSION_PATH}`);
-  }
+test('отправить фото с текстом в канал тест', async ({ browser }) => {
+  if (!fs.existsSync(SESSION_PATH)) throw new Error(`Файл сессии не найден: ${SESSION_PATH}`);
+  if (!fs.existsSync(IMAGE_PATH)) throw new Error(`Изображение не найдено: ${IMAGE_PATH}`);
 
   const context = await browser.newContext({
     storageState: SESSION_PATH,
@@ -25,15 +25,32 @@ test('отправить сообщение в канал тест', async ({ br
   const page = await context.newPage();
 
   await page.goto('https://web.max.ru/-74167276777563', { waitUntil: 'domcontentloaded', timeout: 30000 });
-
   await page.waitForFunction(() => document.body.innerText.length > 50, { timeout: 30000 }).catch(() => {});
   await page.waitForTimeout(3000);
 
   const messageInput = page.locator('[contenteditable][placeholder="Пост"]');
   await messageInput.waitFor({ state: 'visible', timeout: 20000 });
-  await messageInput.click();
 
-  // Вставляем через буфер обмена чтобы корректно передать эмодзи и переносы строк
+  // Открываем меню прикрепления
+  const attachButton = page.locator('button.button--neutral-link.button--link').first();
+  await attachButton.click();
+
+  // Кликаем "Фото или видео" и перехватываем file chooser
+  const photoMenuItem = page.locator('button.actionsMenuItem', { hasText: 'Фото или видео' });
+  await photoMenuItem.waitFor({ state: 'visible', timeout: 5000 });
+
+  const [fileChooser] = await Promise.all([
+    page.waitForEvent('filechooser', { timeout: 5000 }),
+    photoMenuItem.click(),
+  ]);
+  await fileChooser.setFiles(IMAGE_PATH);
+
+  // Ждём появления превью
+  await page.waitForTimeout(2000);
+  await page.screenshot({ path: 'test-results/image-attached.png' });
+
+  // Вводим текст поста
+  await messageInput.click();
   await page.evaluate((text) => {
     const el = document.querySelector('[contenteditable][placeholder="Пост"]') as HTMLElement;
     el.focus();
@@ -43,11 +60,12 @@ test('отправить сообщение в канал тест', async ({ br
   await page.waitForTimeout(500);
   await page.screenshot({ path: 'test-results/message-typed.png' });
 
+  // Кнопка отправки
   const sendButton = page.locator('button.svelte-1cuof8n');
   await sendButton.waitFor({ state: 'visible', timeout: 5000 });
   await sendButton.click();
 
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(4000);
   await page.screenshot({ path: 'test-results/message-sent.png' });
 
   await expect(page.locator('text=Давление скачет').first()).toBeVisible({ timeout: 10000 });
