@@ -34,7 +34,13 @@ await page.waitForTimeout(3000);
 const messageInput = page.locator('[contenteditable][placeholder="Пост"]');
 await messageInput.waitFor({ state: 'visible', timeout: 20000 });
 await messageInput.click();
-await page.keyboard.type('текст сообщения');
+
+// Для текста с эмодзи и переносами строк — только через execCommand, не keyboard.type()
+await page.evaluate((text) => {
+  const el = document.querySelector('[contenteditable][placeholder="Пост"]') as HTMLElement;
+  el.focus();
+  document.execCommand('insertText', false, text);
+}, 'текст сообщения');
 
 // 2. Кнопка отправки — синий круг со стрелкой вверх, правый нижний угол
 const sendButton = page.locator('button.svelte-1cuof8n');
@@ -42,11 +48,35 @@ await sendButton.waitFor({ state: 'visible', timeout: 5000 });
 await sendButton.click();
 ```
 
+## Отправка фото с текстом
+
+```typescript
+// 1. Открыть меню прикрепления (скрепка, левый нижний угол поля ввода)
+const attachButton = page.locator('button.button--neutral-link.button--link').first();
+await attachButton.click();
+
+// 2. Выбрать "Фото или видео" из меню и передать файл
+const photoMenuItem = page.locator('button.actionsMenuItem', { hasText: 'Фото или видео' });
+await photoMenuItem.waitFor({ state: 'visible', timeout: 5000 });
+
+const [fileChooser] = await Promise.all([
+  page.waitForEvent('filechooser', { timeout: 5000 }),
+  photoMenuItem.click(),
+]);
+await fileChooser.setFiles('/абсолютный/путь/к/файлу.png');
+
+// 3. Ввести текст и отправить (как обычно)
+await messageInput.click();
+// ... execCommand + sendButton.click()
+```
+
 ### Селекторы (актуальны на апрель 2026)
 
 | Элемент | Селектор |
 |---|---|
 | Поле ввода поста | `[contenteditable][placeholder="Пост"]` |
+| Кнопка прикрепления файла | `button.button--neutral-link.button--link` (первая) |
+| Пункт меню "Фото или видео" | `button.actionsMenuItem` с текстом `Фото или видео` |
 | Кнопка отправки | `button.svelte-1cuof8n` |
 
 > Svelte-классы могут измениться после обновления сайта. Если кнопка не найдена — перепроверить через `page.evaluate` все `button` на странице после набора текста.
