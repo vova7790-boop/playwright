@@ -9,6 +9,7 @@ const CONTENT_PATH = path.resolve('post-content.json');
 const CHANNEL_URL = 'https://web.max.ru/-74167276777563';
 
 test('отправить пост с картинкой в канал Max', async ({ browser }) => {
+  test.setTimeout(300000); // 5 минут — генерация картинки через kie.ai занимает до 120 сек
   if (!fs.existsSync(SESSION_PATH)) throw new Error(`Файл сессии не найден: ${SESSION_PATH}`);
   if (!fs.existsSync(CONTENT_PATH)) throw new Error(`Файл контента не найден: ${CONTENT_PATH}. Сначала сгенерируй пост.`);
 
@@ -55,9 +56,8 @@ test('отправить пост с картинкой в канал Max', asyn
   await messageInput.click();
   await page.waitForTimeout(300);
 
-  // Split into paragraphs (\n\n) and lines within each paragraph (\n).
-  // Between paragraphs: 2×Shift+Enter = one blank line.
-  // Between lines inside a paragraph: 1×Shift+Enter = no blank line.
+  // Делим на абзацы по \n\n, внутри абзаца строки — одинарный Shift+Enter,
+  // между абзацами — двойной Shift+Enter (одна пустая строка)
   const paragraphs = postText.split('\n\n');
   let isFirstParagraph = true;
 
@@ -68,16 +68,23 @@ test('отправить пост с картинкой в канал Max', asyn
     }
 
     const lines = paragraph.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      if (i > 0) await page.keyboard.press('Shift+Enter');
+    let isFirstLine = true;
 
-      if (isFirstParagraph && i === 0) {
+    for (const line of lines) {
+      if (!isFirstLine) {
+        await page.keyboard.press('Shift+Enter');
+      }
+
+      if (isFirstParagraph && isFirstLine) {
+        // Заголовок — жирным
         await page.keyboard.press('Control+b');
-        await page.keyboard.type(lines[i]);
+        await page.keyboard.type(line);
         await page.keyboard.press('Control+b');
       } else {
-        await page.keyboard.type(lines[i]);
+        await page.keyboard.type(line);
       }
+
+      isFirstLine = false;
     }
 
     isFirstParagraph = false;

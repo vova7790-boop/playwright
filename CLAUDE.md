@@ -22,14 +22,21 @@
 
 ## Шаг 2 — Проверка в Notion (не брали ли эту статью раньше)
 
-Через Notion MCP проверь базу данных **used_articles_Дневник фармацевта**:
-- ID базы: `91afb55f97924f8382e79852e67aee07`
+Запиши файл `article-check.json` в корне проекта:
 
-Проверь два условия:
-1. Нет ли URL найденной статьи в колонке **URL**
-2. Нет ли похожей по смыслу статьи в колонке **«Краткое но точное описание сути статьи»**
+```json
+{ "url": "<URL найденной статьи>", "description": "<1-2 предложения о сути статьи>" }
+```
 
-Если хотя бы одно условие выполнено — найди другую статью и повтори проверку.
+Затем запусти через Bash:
+
+```bash
+npx playwright test tests/notion-check.spec.ts
+```
+
+Прочитай `article-check-result.json` и проверь два условия:
+1. Если `urlMatch: true` — этот URL уже использовался, найди другую статью и повтори проверку.
+2. Если `urlMatch: false` — прочитай список `recentDescriptions` и сравни семантически с описанием текущей статьи. Если по смыслу похожая есть — найди другую статью и повтори проверку.
 
 ---
 
@@ -62,15 +69,13 @@
 
 ## Шаг 4 — Сохранение в Notion
 
-Через Notion MCP добавь запись в **used_articles_Дневник фармацевта**:
-- ID базы: `91afb55f97924f8382e79852e67aee07`
-- data_source_id: `7904954e-7d46-4416-b53d-2a25b87a4179`
+Убедись, что в `post-content.json` есть поля `articleTitle`, `articleUrl`, `articleDescription` (добавь их при сохранении в шаге 6). Затем запусти через Bash:
 
-Поля:
-- `Заголовок` — заголовок поста
-- `userDefined:URL` — URL статьи
-- `date:Дата:start` — текущая дата в формате ГГГГ-ММ-ДД
-- `Краткое но точное описание сути статьи` — 1–2 предложения о сути статьи
+```bash
+npx playwright test tests/notion-save.spec.ts
+```
+
+Скрипт автоматически запишет запись в базу `used_articles` с текущей датой.
 
 ---
 
@@ -92,15 +97,18 @@
 ```json
 {
   "postText": "полный текст поста",
-  "imagePrompt": "английский промпт для kie.ai"
+  "imagePrompt": "английский промпт для kie.ai",
+  "articleTitle": "заголовок поста (для Notion)",
+  "articleUrl": "https://url-статьи",
+  "articleDescription": "1-2 предложения о сути статьи (для Notion)"
 }
 ```
 
 ---
 
-## Шаг 7 — Отправка поста в канал
+## Шаг 7 — Автоматическая публикация в Max Messenger
 
-Запусти тест для публикации:
+Сразу после сохранения `post-content.json` — без каких-либо пауз и вопросов — запусти тест через Bash:
 
 ```bash
 npx playwright test tests/send-post.spec.ts
@@ -108,16 +116,19 @@ npx playwright test tests/send-post.spec.ts
 
 Тест автоматически:
 1. Читает `post-content.json`
-2. Генерирует картинку через kie.ai
+2. Генерирует картинку через kie.ai (~1–3 мин)
 3. Отправляет пост с картинкой в канал Max Messenger
+
+Дожидайся завершения теста и сообщи пользователю результат.
 
 ---
 
 ## Шаг 8 — Вывод результата
 
-Выведи пользователю **только**:
-1. Текст поста (готов для Max Messenger)
-2. Промпт для генерации картинки через kie.ai
+Выведи пользователю:
+1. Текст поста
+2. Промпт для картинки
+3. Статус публикации (успешно / ошибка)
 
 ---
 
@@ -126,9 +137,14 @@ npx playwright test tests/send-post.spec.ts
 | Файл | Назначение |
 |---|---|
 | `src/generate-image.ts` | Генерация картинки через kie.ai API |
+| `src/notion-tracker.ts` | HTTP-клиент для Notion REST API |
 | `tests/send-post.spec.ts` | Отправка поста с картинкой в канал Max |
 | `tests/send-message.spec.ts` | Пример поста с хардкодом (для справки) |
+| `tests/notion-check.spec.ts` | Проверка дубликата статьи в Notion |
+| `tests/notion-save.spec.ts` | Сохранение статьи в Notion |
 | `tests/save-session.ts` | Обновление сессии Max Messenger |
 | `post-content.json` | Сгенерированный контент (gitignore) |
+| `article-check.json` | Входные данные для проверки дубликата (gitignore) |
+| `article-check-result.json` | Результат проверки дубликата (gitignore) |
 | `session.json` | Сессия Max Messenger (gitignore) |
 | `MAX_MESSENGER.md` | Документация по автоматизации Max |
