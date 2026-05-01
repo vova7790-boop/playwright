@@ -1,4 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
+import fs from 'fs';
+
+if (fs.existsSync('.env')) {
+  for (const line of fs.readFileSync('.env', 'utf-8').split('\n')) {
+    const eqIndex = line.indexOf('=');
+    if (eqIndex > 0 && !line.trimStart().startsWith('#')) {
+      const key = line.slice(0, eqIndex).trim();
+      const value = line.slice(eqIndex + 1).trim();
+      if (key) process.env[key] = value;
+    }
+  }
+}
 
 export default defineConfig({
   testDir: './tests',
